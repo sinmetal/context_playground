@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"time"
 )
@@ -10,11 +9,15 @@ import (
 func GoodbyeGoroutine(ctx context.Context) error {
 	retCh := make(chan error)
 	go func() {
-		retCh <- fat()
+		ret := fat()
+		select {
+		case <-ctx.Done():
+		case retCh <- ret:
+		}
 	}()
 	select {
 	case <-ctx.Done():
-		return errors.New("timeout")
+		return ctx.Err()
 	case ret := <-retCh:
 		return ret
 	}
